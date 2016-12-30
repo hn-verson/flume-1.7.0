@@ -20,15 +20,17 @@ package org.apache.flume.event;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
+
+import com.google.gson.Gson;
 import org.apache.flume.Event;
 import org.apache.flume.FlumeException;
 
 /**
- *
+ * Json event pack class
  */
 public class JSONEvent implements Event {
   private Map<String, String> headers;
-  private String body;
+  private Map<String, String> body;
   private transient String charset = "UTF-8";
 
   @Override
@@ -45,7 +47,8 @@ public class JSONEvent implements Event {
   public byte[] getBody() {
     if (body != null) {
       try {
-        return body.getBytes(charset);
+        Gson gson = new Gson();
+        return gson.toJson(body).getBytes(charset);
       } catch (UnsupportedEncodingException ex) {
         throw new FlumeException(String.format("%s encoding not supported", charset), ex);
       }
@@ -57,11 +60,11 @@ public class JSONEvent implements Event {
 
   @Override
   public void setBody(byte[] body) {
-    if (body != null) {
-      this.body = new String(body);
-    } else {
-      this.body = "";
-    }
+    //no op
+  }
+
+  public void setBody(Map<String, String> body) {
+    this.body = body;
   }
 
   public void setCharset(String charset) {

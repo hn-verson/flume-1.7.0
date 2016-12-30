@@ -53,22 +53,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.BOOTSTRAP_SERVERS_CONFIG;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.BATCH_SIZE;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.DEFAULT_BATCH_SIZE;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.BROKER_LIST_FLUME_KEY;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.DEFAULT_ACKS;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.DEFAULT_KEY_SERIALIZER;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.DEFAULT_TOPIC;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.DEFAULT_VALUE_SERIAIZER;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.KAFKA_PRODUCER_PREFIX;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.KEY_HEADER;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.OLD_BATCH_SIZE;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.REQUIRED_ACKS_FLUME_KEY;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.TOPIC_CONFIG;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.TOPIC_HEADER;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.KEY_SERIALIZER_KEY;
-import static org.apache.flume.sink.kafka.KafkaSinkConstants.MESSAGE_SERIALIZER_KEY;
+import static org.apache.flume.sink.kafka.KafkaSinkConstants.*;
 
 
 /**
@@ -110,6 +95,7 @@ public class KafkaSink extends AbstractSink implements Configurable {
   private KafkaProducer<String, byte[]> producer;
 
   private String topic;
+  private String topicHeader;
   private int batchSize;
   private List<Future<RecordMetadata>> kafkaFutures;
   private KafkaSinkCounter counter;
@@ -171,7 +157,7 @@ public class KafkaSink extends AbstractSink implements Configurable {
         byte[] eventBody = event.getBody();
         Map<String, String> headers = event.getHeaders();
 
-        eventTopic = headers.get(TOPIC_HEADER);
+        eventTopic = headers.get(topicHeader);
         if (eventTopic == null) {
           eventTopic = topic;
         }
@@ -303,6 +289,8 @@ public class KafkaSink extends AbstractSink implements Configurable {
     }
 
     topic = topicStr;
+
+    topicHeader = context.getString(TOPIC_HEADER_NAME, DEFAULT_TOPIC_HEADER);
 
     batchSize = context.getInteger(BATCH_SIZE, DEFAULT_BATCH_SIZE);
 
