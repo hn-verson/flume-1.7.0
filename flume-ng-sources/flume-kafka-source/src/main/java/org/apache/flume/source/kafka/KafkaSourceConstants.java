@@ -54,4 +54,7 @@ public class KafkaSourceConstants {
   public static final String TIMESTAMP_HEADER = "timestamp";
   public static final String PARTITION_HEADER = "partition";
 
+  //additional headers
+  public static final String TYPE_HEADER = "type";
+
 }

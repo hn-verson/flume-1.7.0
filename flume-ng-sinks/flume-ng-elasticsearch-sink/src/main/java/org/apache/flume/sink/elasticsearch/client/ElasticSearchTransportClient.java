@@ -30,14 +30,16 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
+import org.elasticsearch.shield.ShieldPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import org.apache.flume.sink.elasticsearch.ElasticSearchIndexRequestBuilderFactory;
 
@@ -72,18 +74,18 @@ public class ElasticSearchTransportClient implements ElasticSearchClient {
    * @param clusterName
    * @param serializer
    */
-  public ElasticSearchTransportClient(String[] hostNames, String clusterName,
+  public ElasticSearchTransportClient(String[] hostNames, String clusterName, String shieldUser,
       ElasticSearchEventSerializer serializer) {
     configureHostnames(hostNames);
     this.serializer = serializer;
-    openClient(clusterName);
+    openClient(clusterName,shieldUser);
   }
 
-  public ElasticSearchTransportClient(String[] hostNames, String clusterName,
+  public ElasticSearchTransportClient(String[] hostNames, String clusterName, String shieldUser,
       ElasticSearchIndexRequestBuilderFactory indexBuilder) {
     configureHostnames(hostNames);
     this.indexRequestBuilderFactory = indexBuilder;
-    openClient(clusterName);
+    openClient(clusterName,shieldUser);
   }
   
   /**
@@ -138,7 +140,11 @@ public class ElasticSearchTransportClient implements ElasticSearchClient {
       String host = hostPort[0].trim();
       int port = hostPort.length == 2 ? Integer.parseInt(hostPort[1].trim())
               : DEFAULT_PORT;
-      serverAddresses[i] = new InetSocketTransportAddress(host, port);
+      try {
+        serverAddresses[i] = new InetSocketTransportAddress(InetAddress.getByName(host), port);
+      } catch (UnknownHostException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
   
@@ -161,7 +167,7 @@ public class ElasticSearchTransportClient implements ElasticSearchClient {
     if (indexRequestBuilderFactory == null) {
       indexRequestBuilder = client
           .prepareIndex(indexNameBuilder.getIndexName(event), indexType)
-          .setSource(serializer.getContentBuilder(event).bytes());
+          .setSource(event.getBody());
     } else {
       indexRequestBuilder = indexRequestBuilderFactory.createIndexRequest(
           client, indexNameBuilder.getIndexPrefix(event), indexType, event);
@@ -190,13 +196,24 @@ public class ElasticSearchTransportClient implements ElasticSearchClient {
    * 
    * @param clusterName
    */
-  private void openClient(String clusterName) {
+  private void openClient(String clusterName, String shieldUser) {
     logger.info("Using ElasticSearch hostnames: {} ",
         Arrays.toString(serverAddresses));
-    Settings settings = ImmutableSettings.settingsBuilder()
-        .put("cluster.name", clusterName).build();
 
-    TransportClient transportClient = new TransportClient(settings);
+    boolean isAuth = false;
+
+    Settings.Builder sBuilder = Settings.settingsBuilder();
+    sBuilder.put("cluster.name",clusterName);
+    if (shieldUser != null && !"".equals(shieldUser)) {
+      isAuth = true;
+      sBuilder.put("shield.user",shieldUser);
+    }
+
+    TransportClient.Builder cBuilder = TransportClient.builder().settings(sBuilder.build());
+    if (isAuth) {
+      cBuilder.addPlugin(ShieldPlugin.class);
+    }
+    TransportClient transportClient = cBuilder.build();
     for (InetSocketTransportAddress host : serverAddresses) {
       transportClient.addTransportAddress(host);
     }

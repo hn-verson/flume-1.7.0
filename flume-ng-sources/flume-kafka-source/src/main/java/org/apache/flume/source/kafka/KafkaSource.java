@@ -180,8 +180,6 @@ public class KafkaSource extends AbstractPollableSource
   @Override
   protected Status doProcess() throws EventDeliveryException {
     final String batchUUID = UUID.randomUUID().toString();
-    byte[] kafkaMessage;
-    String kafkaKey;
     Event event;
     byte[] eventBody;
 
@@ -220,8 +218,6 @@ public class KafkaSource extends AbstractPollableSource
 
         // get next message
         ConsumerRecord<String, byte[]> message = it.next();
-        kafkaKey = message.key();
-        kafkaMessage = message.value();
 
         if (useAvroEventFormat) {
           //Assume the event is in Avro format using the AvroFlumeEvent schema
@@ -245,21 +241,13 @@ public class KafkaSource extends AbstractPollableSource
           headers = new HashMap<String, String>(4);
         }
 
-        // Add headers to event (timestamp, topic, partition, key) only if they don't exist
+        // Add headers to event (timestamp,type) only if they don't exist
         if (!headers.containsKey(KafkaSourceConstants.TIMESTAMP_HEADER)) {
           headers.put(KafkaSourceConstants.TIMESTAMP_HEADER,
               String.valueOf(System.currentTimeMillis()));
         }
-        if (!headers.containsKey(KafkaSourceConstants.TOPIC_HEADER)) {
-          headers.put(KafkaSourceConstants.TOPIC_HEADER, message.topic());
-        }
-        if (!headers.containsKey(KafkaSourceConstants.PARTITION_HEADER)) {
-          headers.put(KafkaSourceConstants.PARTITION_HEADER,
-              String.valueOf(message.partition()));
-        }
-
-        if (kafkaKey != null) {
-          headers.put(KafkaSourceConstants.KEY_HEADER, kafkaKey);
+        if (!headers.containsKey(KafkaSourceConstants.TYPE_HEADER)) {
+          headers.put(KafkaSourceConstants.TYPE_HEADER, message.topic());
         }
 
         if (log.isTraceEnabled()) {

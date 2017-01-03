@@ -18,19 +18,6 @@
  */
 package org.apache.flume.sink.elasticsearch;
 
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.BATCH_SIZE;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.CLUSTER_NAME;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.DEFAULT_CLUSTER_NAME;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.DEFAULT_INDEX_NAME;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.DEFAULT_INDEX_TYPE;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.DEFAULT_TTL;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.HOSTNAMES;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.INDEX_NAME;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.INDEX_TYPE;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.SERIALIZER;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.SERIALIZER_PREFIX;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.TTL;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.TTL_REGEX;
 import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Channel;
 import org.apache.flume.Context;
@@ -55,13 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.CLIENT_PREFIX;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.CLIENT_TYPE;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.DEFAULT_CLIENT_TYPE;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.DEFAULT_INDEX_NAME_BUILDER_CLASS;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.DEFAULT_SERIALIZER_CLASS;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.INDEX_NAME_BUILDER;
-import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.INDEX_NAME_BUILDER_PREFIX;
+import static org.apache.flume.sink.elasticsearch.ElasticSearchSinkConstants.*;
 
 /**
  * A sink which reads events from a channel and writes them to ElasticSearch
@@ -97,6 +78,7 @@ public class ElasticSearchSink extends AbstractSink implements Configurable {
   private int batchSize = defaultBatchSize;
   private long ttlMs = DEFAULT_TTL;
   private String clusterName = DEFAULT_CLUSTER_NAME;
+  private String shieldUser = null;
   private String indexName = DEFAULT_INDEX_NAME;
   private String indexType = DEFAULT_INDEX_TYPE;
   private String clientType = DEFAULT_CLIENT_TYPE;
@@ -257,6 +239,10 @@ public class ElasticSearchSink extends AbstractSink implements Configurable {
       this.clusterName = context.getString(CLUSTER_NAME);
     }
 
+    if (StringUtils.isNotBlank(context.getString(SHIELD_USER))) {
+      this.shieldUser = context.getString(SHIELD_USER);
+    }
+
     if (StringUtils.isNotBlank(context.getString(BATCH_SIZE))) {
       this.batchSize = Integer.parseInt(context.getString(BATCH_SIZE));
     }
@@ -356,7 +342,7 @@ public class ElasticSearchSink extends AbstractSink implements Configurable {
             clientType, eventSerializer, indexRequestFactory);
       } else {
         client = clientFactory.getClient(clientType, serverAddresses,
-            clusterName, eventSerializer, indexRequestFactory);
+            clusterName, shieldUser, eventSerializer, indexRequestFactory);
         client.configure(elasticSearchClientContext);
       }
       sinkCounter.incrementConnectionCreatedCount();

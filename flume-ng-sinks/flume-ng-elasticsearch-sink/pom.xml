@@ -53,7 +53,15 @@
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch</artifactId>
-      <optional>true</optional>
+      <!-- 原flume工程此参数设置成了false，如果需要与elasticsearch集成，需要将此参数设置成false，否则发布包的时候无法添加elasticsearch依赖包 -->
+      <optional>false</optional>
+    </dependency>
+
+    <!-- add the shield jar as a dependency -->
+    <dependency>
+      <groupId>org.elasticsearch.plugin</groupId>
+      <artifactId>shield</artifactId>
+      <version>${elasticsearch.version}</version>
     </dependency>
 
     <dependency>
@@ -81,6 +89,8 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+      <!-- flume-parent父模块中的version版本为11.0.2，由于elasticsearch使用了18.0版本，但坑点是18.0并不兼容11.0.2，故不能修改flume-parent中的版本(其他模块依赖),所以在此处修改elasticsearch依赖版本，打包时需要手动替换低版本的guava包 -->
+      <version>18.0</version>
     </dependency>
 
     <dependency>
@@ -90,4 +100,19 @@
     </dependency>
 
   </dependencies>
+
+  <repositories>
+    <!-- add the elasticsearch repo -->
+    <repository>
+      <id>elasticsearch-releases</id>
+      <url>https://maven.elasticsearch.org/releases</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
 </project>
