@@ -48,7 +48,7 @@ limitations under the License.
 
     <avro.version>1.7.4</avro.version>
     <elasticsearch.version>2.4.2</elasticsearch.version>
-    <hadoop2.version>2.4.0</hadoop2.version>
+    <hadoop2.version>2.6.5</hadoop2.version>
     <thrift.version>0.7.0</thrift.version>
     <kafka.version>0.10.1.0</kafka.version>
     <kite.version>1.0.0</kite.version>
