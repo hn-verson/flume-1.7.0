@@ -52,6 +52,13 @@ limitations under the License.
       <artifactId>slf4j-log4j12</artifactId>
     </dependency>
 
+    <!-- 升级guava11.0.2至18.0导致缺失此依赖，需手动添加 -->
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <version>1.3.9</version>
+    </dependency>
+
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>

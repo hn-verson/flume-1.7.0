@@ -814,7 +814,7 @@ limitations under the License.
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>11.0.2</version>
+        <version>18.0</version>
       </dependency>
 
       <dependency>

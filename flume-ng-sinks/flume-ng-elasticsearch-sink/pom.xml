@@ -53,7 +53,7 @@
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch</artifactId>
-      <!-- 原flume工程此参数设置成了false，如果需要与elasticsearch集成，需要将此参数设置成false，否则发布包的时候无法添加elasticsearch依赖包 -->
+      <!-- 原flume工程此参数设置成了true，如果需要与elasticsearch集成，需要将此参数设置成false，否则发布包的时候无法添加elasticsearch依赖包 -->
       <optional>false</optional>
     </dependency>
 

@@ -207,7 +207,7 @@ public class SyslogParser {
     String timestampPrefix = msg.substring(curPos, RFC5424_PREFIX_LEN);
 
     try {
-      ts = timestampCache.get(timestampPrefix);
+      ts = timestampCache.get(timestampPrefix,null);
     } catch (ExecutionException ex) {
       throw new IllegalArgumentException("bad timestamp format", ex);
     }
