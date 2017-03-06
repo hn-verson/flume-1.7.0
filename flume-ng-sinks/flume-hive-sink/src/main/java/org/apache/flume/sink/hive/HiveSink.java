@@ -22,29 +22,31 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.gson.Gson;
 import org.apache.flume.Channel;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.EventDeliveryException;
 import org.apache.flume.Transaction;
+import org.apache.flume.channel.MemoryChannel;
 import org.apache.flume.conf.Configurable;
+import org.apache.flume.event.JSONEvent;
 import org.apache.flume.formatter.output.BucketPath;
 import org.apache.flume.instrumentation.SinkCounter;
 import org.apache.flume.sink.AbstractSink;
+import org.apache.hadoop.hdfs.DFSClient;
 import org.apache.hive.hcatalog.streaming.HiveEndPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Type;
+import java.nio.charset.Charset;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.TimeZone;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -76,6 +78,9 @@ public class HiveSink extends AbstractSink implements Configurable {
   private boolean autoCreatePartitions;
   private String serializerType;
   private HiveEventSerializer serializer;
+
+  private String partitionGist;
+  private String partitionPattern;
 
   /**
    * Default timeout for blocking I/O calls in HiveWriter
@@ -111,7 +116,7 @@ public class HiveSink extends AbstractSink implements Configurable {
     if (metaStoreUri.equalsIgnoreCase("null")) { // for testing support
       metaStoreUri = null;
     }
-    proxyUser = null; // context.getString("hive.proxyUser"); not supported by hive api yet
+    proxyUser = context.getString("hive.proxyUser"); // context.getString("hive.proxyUser"); not supported by hive api yet
     database = context.getString(Config.HIVE_DATABASE);
     if (database == null) {
       throw new IllegalArgumentException(Config.HIVE_DATABASE + " config setting is not " +
@@ -126,8 +131,10 @@ public class HiveSink extends AbstractSink implements Configurable {
     String partitions = context.getString(Config.HIVE_PARTITION);
     if (partitions != null) {
       partitionVals = Arrays.asList(partitions.split(","));
+    } else {
+      partitionGist = context.getString(Config.HIVE_PARTITION_GIST);
+      partitionPattern = context.getString(Config.HIVE_PARTITION_PATTERN);
     }
-
 
     txnsPerBatchAsk = context.getInteger(Config.HIVE_TXNS_PER_BATCH_ASK, DEFAULT_TXNSPERBATCH);
     if (txnsPerBatchAsk < 0) {
@@ -276,6 +283,7 @@ public class HiveSink extends AbstractSink implements Configurable {
   // Drains one batch of events from Channel into Hive
   private int drainOneBatch(Channel channel)
           throws HiveWriter.Failure, InterruptedException {
+
     int txnEventCount = 0;
     try {
       Map<HiveEndPoint,HiveWriter> activeWriters = Maps.newHashMap();
@@ -286,9 +294,14 @@ public class HiveSink extends AbstractSink implements Configurable {
           break;
         }
 
+        String body = new String(event.getBody(), Charset.forName("UTF-8"));
+        Gson gson = new Gson();
+        Type type = new TypeToken<Map<String, String>>(){}.getType();
+        Map<String, String> bodys = gson.fromJson(body, type);
+
         //1) Create end point by substituting place holders
         HiveEndPoint endPoint = makeEndPoint(metaStoreUri, database, table,
-                partitionVals, event.getHeaders(), timeZone,
+                partitionVals, event.getHeaders(),bodys, timeZone,
                 needRounding, roundUnit, roundValue, useLocalTime);
 
         //2) Create or reuse Writer
@@ -367,19 +380,36 @@ public class HiveSink extends AbstractSink implements Configurable {
 
   private HiveEndPoint makeEndPoint(String metaStoreUri, String database, String table,
                                     List<String> partVals, Map<String, String> headers,
-                                    TimeZone timeZone, boolean needRounding,
-                                    int roundUnit, Integer roundValue,
-                                    boolean useLocalTime)  {
+                                    Map<String, String> bodys, TimeZone timeZone,
+                                    boolean needRounding, int roundUnit,
+                                    Integer roundValue, boolean useLocalTime) {
+    ArrayList<String> realPartVals = Lists.newArrayList();
     if (partVals == null) {
-      return new HiveEndPoint(metaStoreUri, database, table, null);
+      if (partitionGist == null || partitionPattern == null) {
+        return new HiveEndPoint(metaStoreUri, database, table, null);
+      } else {
+        SimpleDateFormat sdf = new SimpleDateFormat(Config.DATE_FORMAT);
+        String gist = BucketPath.escapeString(partitionGist,bodys);
+        try {
+          Date d = sdf.parse(gist);
+          List<String> patternList = Arrays.asList(partitionPattern.split(","));
+          for (String pattern : patternList) {
+            SimpleDateFormat s = new SimpleDateFormat(pattern);
+            realPartVals.add(s.format(d));
+          }
+        } catch (ParseException e) {
+          LOG.error("Error date format: " + gist,e);
+        }
+      }
+    } else {
+      for (String partVal : partVals) {
+        realPartVals.add(BucketPath.escapeString(partVal, headers, timeZone,
+                needRounding, roundUnit, roundValue, useLocalTime));
+      }
     }
 
-    ArrayList<String> realPartVals = Lists.newArrayList();
-    for (String partVal : partVals) {
-      realPartVals.add(BucketPath.escapeString(partVal, headers, timeZone,
-              needRounding, roundUnit, roundValue, useLocalTime));
-    }
     return new HiveEndPoint(metaStoreUri, database, table, realPartVals);
+
   }
 
   /**

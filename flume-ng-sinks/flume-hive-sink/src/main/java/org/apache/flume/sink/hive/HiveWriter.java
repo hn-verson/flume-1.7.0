@@ -376,7 +376,7 @@ class HiveWriter {
       return timedCall(new CallRunner1<StreamingConnection>() {
         @Override
         public StreamingConnection call() throws InterruptedException, StreamingException {
-          return endPoint.newConnection(autoCreatePartitions); // could block
+          return endPoint.newConnection(autoCreatePartitions, true, proxyUser); // could block
         }
       });
     } catch (Exception e) {

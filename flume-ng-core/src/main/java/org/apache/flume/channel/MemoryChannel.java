@@ -213,6 +213,14 @@ public class MemoryChannel extends BasicChannelSemantics {
   }
 
   /**
+   * Get blocking queue size
+   * @return
+     */
+  public int size() {
+    return queue.size();
+  }
+
+  /**
    * Read parameters from context
    * <li>capacity = type long that defines the total number of events allowed at one time in the queue.
    * <li>transactionCapacity = type long that defines the total number of events allowed in one transaction.

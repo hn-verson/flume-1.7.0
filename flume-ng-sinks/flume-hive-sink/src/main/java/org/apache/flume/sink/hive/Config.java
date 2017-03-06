@@ -23,6 +23,8 @@ public class Config {
   public static final String HIVE_DATABASE = "hive.database";
   public static final String HIVE_TABLE = "hive.table";
   public static final String HIVE_PARTITION = "hive.partition";
+  public static final String HIVE_PARTITION_GIST = "hive.partition.gist";
+  public static final String HIVE_PARTITION_PATTERN = "hive.partition.pattern";
   public static final String HIVE_TXNS_PER_BATCH_ASK = "hive.txnsPerBatchAsk";
   public static final String BATCH_SIZE = "batchSize";
   public static final String IDLE_TIMEOUT = "idleTimeout";
@@ -38,4 +40,6 @@ public class Config {
   public static final String SECOND = "second";
   public static final String ROUND_VALUE = "roundValue";
   public static final String SERIALIZER = "serializer";
+
+  public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 }
