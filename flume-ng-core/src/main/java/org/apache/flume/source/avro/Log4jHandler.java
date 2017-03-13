@@ -21,10 +21,10 @@ public class Log4jHandler extends AbstractHandler implements Handler {
     private static final Logger LOG = LoggerFactory.getLogger(Log4jHandler.class);
     private static final String CHARSET_NAME = "UTF-8";
 
-    private final static String LOG_LEVEL = "flume.client.log4j.log.level";
-    private final static String MESSAGE_ENCODING = "flume.client.log4j.message.encoding";
-    private final static String LOGGER_NAME = "flume.client.log4j.logger.name";
-    private final static String TIMESTAMP = "flume.client.log4j.timestamp";
+    private final static String LOG_LEVEL = "flume.client.avro.log.level";
+    private final static String MESSAGE_ENCODING = "flume.client.avro.message.encoding";
+    private final static String LOGGER_NAME = "flume.client.avro.logger.name";
+    private final static String TIMESTAMP = "flume.client.avro.timestamp";
 
     private final static String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
