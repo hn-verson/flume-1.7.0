@@ -130,7 +130,7 @@ public class TestLog4jAppender {
   @Test
   public void testLog4jAppenderFailureUnsafeMode() throws Throwable {
     configureSource();
-    props.setProperty("log4j.appender.out2.UnsafeMode", String.valueOf(true));
+    props.setProperty("avro.appender.out2.UnsafeMode", String.valueOf(true));
     PropertyConfigurator.configure(props);
     Logger logger = LogManager.getLogger(TestLog4jAppender.class);
     source.stop();
@@ -174,8 +174,8 @@ public class TestLog4jAppender {
   @Test
   public void testLayout() throws IOException {
     configureSource();
-    props.put("log4j.appender.out2.layout", "org.apache.log4j.PatternLayout");
-    props.put("log4j.appender.out2.layout.ConversionPattern",
+    props.put("avro.appender.out2.layout", "org.apache.avro.PatternLayout");
+    props.put("avro.appender.out2.layout.ConversionPattern",
         "%-5p [%t]: %m%n");
     PropertyConfigurator.configure(props);
     Logger logger = LogManager.getLogger(TestLog4jAppender.class);
@@ -230,9 +230,9 @@ public class TestLog4jAppender {
     ch = new SlowMemoryChannel(2000);
     Configurables.configure(ch, new Context());
     configureSource();
-    props.put("log4j.appender.out2.Timeout", "1000");
-    props.put("log4j.appender.out2.layout", "org.apache.log4j.PatternLayout");
-    props.put("log4j.appender.out2.layout.ConversionPattern",
+    props.put("avro.appender.out2.Timeout", "1000");
+    props.put("avro.appender.out2.layout", "org.apache.avro.PatternLayout");
+    props.put("avro.appender.out2.layout.ConversionPattern",
         "%-5p [%t]: %m%n");
     PropertyConfigurator.configure(props);
     Logger logger = LogManager.getLogger(TestLog4jAppender.class);
@@ -248,7 +248,7 @@ public class TestLog4jAppender {
 
   @Test // Should not throw
   public void testSlownessUnsafeMode() throws Throwable {
-    props.setProperty("log4j.appender.out2.UnsafeMode", String.valueOf(true));
+    props.setProperty("avro.appender.out2.UnsafeMode", String.valueOf(true));
     testSlowness();
   }
 

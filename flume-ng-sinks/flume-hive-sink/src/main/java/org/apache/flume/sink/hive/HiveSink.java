@@ -25,6 +25,7 @@ import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
+import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Channel;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
@@ -36,8 +37,13 @@ import org.apache.flume.event.JSONEvent;
 import org.apache.flume.formatter.output.BucketPath;
 import org.apache.flume.instrumentation.SinkCounter;
 import org.apache.flume.sink.AbstractSink;
+import org.apache.flume.source.kafka.KafkaSource;
+import org.apache.flume.source.kafka.KafkaSourceConstants;
 import org.apache.hadoop.hdfs.DFSClient;
 import org.apache.hive.hcatalog.streaming.HiveEndPoint;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,6 +104,11 @@ public class HiveSink extends AbstractSink implements Configurable {
 
   private Timer heartBeatTimer = new Timer();
   private AtomicBoolean timeToSendHeartBeat = new AtomicBoolean(false);
+
+  // Control kafka consumer offset
+  private String kafkaConsumerId;
+  private KafkaConsumer kafkaConsumer;
+  private Map<TopicPartition, OffsetAndMetadata> tpAndOffsetMetadata;
 
   @VisibleForTesting
   Map<HiveEndPoint, HiveWriter> getAllWriters() {
@@ -177,6 +188,11 @@ public class HiveSink extends AbstractSink implements Configurable {
     String tzName = context.getString(Config.TIME_ZONE);
     timeZone = (tzName == null) ? null : TimeZone.getTimeZone(tzName);
     needRounding = context.getBoolean(Config.ROUND, false);
+
+    if (StringUtils.isNotBlank(context.getString(Config.KAFKA_CONSUMER_IDENTIFY))) {
+      kafkaConsumerId = context.getString(Config.KAFKA_CONSUMER_IDENTIFY);
+      tpAndOffsetMetadata = new HashMap<TopicPartition, OffsetAndMetadata>();
+    }
 
     String unit = context.getString(Config.ROUND_UNIT, Config.MINUTE);
     if (unit.equalsIgnoreCase(Config.HOUR)) {
@@ -284,6 +300,7 @@ public class HiveSink extends AbstractSink implements Configurable {
   private int drainOneBatch(Channel channel)
           throws HiveWriter.Failure, InterruptedException {
 
+    final String batchUUID = UUID.randomUUID().toString();
     int txnEventCount = 0;
     try {
       Map<HiveEndPoint,HiveWriter> activeWriters = Maps.newHashMap();
@@ -293,6 +310,8 @@ public class HiveSink extends AbstractSink implements Configurable {
         if (event == null) {
           break;
         }
+
+        Map<String,String> headers = event.getHeaders();
 
         String body = new String(event.getBody(), Charset.forName("UTF-8"));
         Gson gson = new Gson();
@@ -311,6 +330,10 @@ public class HiveSink extends AbstractSink implements Configurable {
         LOG.debug("{} : Writing event to {}", getName(), endPoint);
         writer.write(event);
 
+        // For each partition store next offset that is going to be read.
+        tpAndOffsetMetadata.put(new TopicPartition(headers.get(KafkaSourceConstants.TYPE_HEADER), Integer.valueOf(headers.get(KafkaSourceConstants.PARTITION_HEADER))),
+                new OffsetAndMetadata(Long.valueOf(headers.get(KafkaSourceConstants.OFFSET_HEADER)), batchUUID));
+
       } // for
 
       //4) Update counters
@@ -327,6 +350,15 @@ public class HiveSink extends AbstractSink implements Configurable {
       // 5) Flush all Writers
       for (HiveWriter writer : activeWriters.values()) {
         writer.flush(true);
+      }
+
+      if (!activeWriters.values().isEmpty()) {
+        //update kafka consumer offset
+        if (kafkaConsumer == null && kafkaConsumerId != null) {
+          kafkaConsumer = KafkaSource.getConsumerById(kafkaConsumerId);
+        } else if(kafkaConsumer != null && !tpAndOffsetMetadata.isEmpty()) {
+          kafkaConsumer.commitSyncThreadSafe(tpAndOffsetMetadata);
+        }
       }
 
       sinkCounter.addToEventDrainSuccessCount(txnEventCount);

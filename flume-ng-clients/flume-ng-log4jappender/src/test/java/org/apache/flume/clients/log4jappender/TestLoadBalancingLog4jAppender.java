@@ -287,18 +287,18 @@ public class TestLoadBalancingLog4jAppender {
     }
 
     // The properties file having Avro port info should be loaded only
-    // after the test begins, else log4j tries to connect to the source
+    // after the test begins, else avro tries to connect to the source
     // before the source has started up in the above function, since
-    // log4j setup is completed before the @Before calls also.
+    // avro setup is completed before the @Before calls also.
     // This will cause the test to fail even before it starts!
 
     FileReader reader = new FileReader(log4jProps);
     Properties props = new Properties();
     props.load(reader);
-    props.setProperty("log4j.appender.out2.UnsafeMode",
+    props.setProperty("avro.appender.out2.UnsafeMode",
         String.valueOf(unsafeMode));
     if (slowDown) {
-      props.setProperty("log4j.appender.out2.Timeout", String.valueOf(1000));
+      props.setProperty("avro.appender.out2.Timeout", String.valueOf(1000));
     }
     PropertyConfigurator.configure(props);
     fixture = LogManager.getLogger(TestLoadBalancingLog4jAppender.class);

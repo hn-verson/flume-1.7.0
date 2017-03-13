@@ -54,7 +54,13 @@ public class KafkaSourceConstants {
   public static final String TIMESTAMP_HEADER = "timestamp";
   public static final String PARTITION_HEADER = "partition";
 
-  //additional headers
+  //additional type headers
   public static final String TYPE_HEADER = "type";
+
+  //additional offset headers
+  public static final String OFFSET_HEADER = "offset";
+
+  //The consumer logic Indentify
+  public static final String KAFKA_CONSUMER_IDENTIFY = "kafka.consumerId";
 
 }

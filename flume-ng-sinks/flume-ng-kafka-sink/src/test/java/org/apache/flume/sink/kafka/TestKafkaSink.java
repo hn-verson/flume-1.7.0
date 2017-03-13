@@ -523,7 +523,7 @@ public class TestKafkaSink {
         ZkUtils.apply(testUtil.getZkUrl(), sessionTimeoutMs, connectionTimeoutMs, false);
     int replicationFactor = 1;
     Properties topicConfig = new Properties();
-    AdminUtils.createTopic(zkUtils, topicName, numPartitions, replicationFactor, topicConfig);
+    //AdminUtils.createTopic(zkUtils, topicName, numPartitions, replicationFactor, topicConfig);
   }
 
   public static void deleteTopic(String topicName) {

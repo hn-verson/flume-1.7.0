@@ -57,16 +57,16 @@ import org.apache.log4j.spi.LoggingEvent;
  *<strong>Port</strong> : This the port on the above host where the Flume
  *Source is listening for events.
  *</p>
- *A sample log4j properties file which appends to a source would look like:
+ *A sample avro properties file which appends to a source would look like:
  *<pre><p>
- *log4j.appender.out2 = org.apache.flume.clients.log4jappender.Log4jAppender
- *log4j.appender.out2.Port = 25430
- *log4j.appender.out2.Hostname = foobarflumesource.com
- *log4j.logger.org.apache.flume.clients.log4jappender = DEBUG,out2</p></pre>
+ *avro.appender.out2 = org.apache.flume.clients.log4jappender.Log4jAppender
+ *avro.appender.out2.Port = 25430
+ *avro.appender.out2.Hostname = foobarflumesource.com
+ *avro.logger.org.apache.flume.clients.log4jappender = DEBUG,out2</p></pre>
  *<p><i>Note: Change the last line to the package of the class(es), that will
  *do the appending.For example if classes from the package
  *com.bar.foo are appending, the last line would be:</i></p>
- *<pre><p>log4j.logger.com.bar.foo = DEBUG,out2</p></pre>
+ *<pre><p>avro.logger.com.bar.foo = DEBUG,out2</p></pre>
  *
  *
  */
@@ -83,7 +83,7 @@ public class Log4jAppender extends AppenderSkeleton {
 
 
   /**
-   * If this constructor is used programmatically rather than from a log4j conf
+   * If this constructor is used programmatically rather than from a avro conf
    * you must set the <tt>port</tt> and <tt>hostname</tt> and then call
    * <tt>activateOptions()</tt> before calling <tt>append()</tt>.
    */

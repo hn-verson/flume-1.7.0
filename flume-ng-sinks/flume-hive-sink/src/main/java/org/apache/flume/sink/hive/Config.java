@@ -42,4 +42,9 @@ public class Config {
   public static final String SERIALIZER = "serializer";
 
   public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
+  /**
+   * The consumer logic Indentify
+   */
+  public static final String KAFKA_CONSUMER_IDENTIFY = "kafka.consumerId";
 }

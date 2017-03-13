@@ -31,6 +31,11 @@ import org.apache.flume.instrumentation.SinkCounter;
 import org.apache.flume.sink.AbstractSink;
 import org.apache.flume.sink.elasticsearch.client.ElasticSearchClient;
 import org.apache.flume.sink.elasticsearch.client.ElasticSearchClientFactory;
+import org.apache.flume.source.kafka.KafkaSource;
+import org.apache.flume.source.kafka.KafkaSourceConstants;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +43,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -95,6 +103,11 @@ public class ElasticSearchSink extends AbstractSink implements Configurable {
   private ElasticSearchEventSerializer eventSerializer;
   private IndexNameBuilder indexNameBuilder;
   private SinkCounter sinkCounter;
+
+  // Control kafka consumer offset
+  private String kafkaConsumerId;
+  private KafkaConsumer kafkaConsumer;
+  private Map<TopicPartition, OffsetAndMetadata> tpAndOffsetMetadata;
 
   /**
    * Create an {@link ElasticSearchSink} configured using the supplied
@@ -156,6 +169,7 @@ public class ElasticSearchSink extends AbstractSink implements Configurable {
   @Override
   public Status process() throws EventDeliveryException {
     logger.debug("processing...");
+    final String batchUUID = UUID.randomUUID().toString();
     Status status = Status.READY;
     Channel channel = getChannel();
     Transaction txn = channel.getTransaction();
@@ -164,12 +178,16 @@ public class ElasticSearchSink extends AbstractSink implements Configurable {
       int count;
       for (count = 0; count < batchSize; ++count) {
         Event event = channel.take();
-
         if (event == null) {
           break;
         }
+        Map<String,String> headers = event.getHeaders();
         String realIndexType = BucketPath.escapeString(indexType, event.getHeaders());
         client.addEvent(event, indexNameBuilder, realIndexType, ttlMs);
+
+        // For each partition store next offset that is going to be read.
+        tpAndOffsetMetadata.put(new TopicPartition(headers.get(KafkaSourceConstants.TYPE_HEADER), Integer.valueOf(headers.get(KafkaSourceConstants.PARTITION_HEADER))),
+                new OffsetAndMetadata(Long.valueOf(headers.get(KafkaSourceConstants.OFFSET_HEADER)), batchUUID));
       }
 
       if (count <= 0) {
@@ -188,6 +206,14 @@ public class ElasticSearchSink extends AbstractSink implements Configurable {
         client.execute();
       }
       txn.commit();
+
+      //update kafka consumer offset
+      if (kafkaConsumer == null && kafkaConsumerId != null) {
+        kafkaConsumer = KafkaSource.getConsumerById(kafkaConsumerId);
+      } else if(kafkaConsumer != null && !tpAndOffsetMetadata.isEmpty()) {
+        kafkaConsumer.commitSyncThreadSafe(tpAndOffsetMetadata);
+      }
+
       sinkCounter.addToEventDrainSuccessCount(count);
       counterGroup.incrementAndGet("transaction.success");
     } catch (Throwable ex) {
@@ -255,6 +281,11 @@ public class ElasticSearchSink extends AbstractSink implements Configurable {
 
     if (StringUtils.isNotBlank(context.getString(CLIENT_TYPE))) {
       clientType = context.getString(CLIENT_TYPE);
+    }
+
+    if (StringUtils.isNotBlank(context.getString(KAFKA_CONSUMER_IDENTIFY))) {
+      kafkaConsumerId = context.getString(KAFKA_CONSUMER_IDENTIFY);
+      tpAndOffsetMetadata = new HashMap<TopicPartition, OffsetAndMetadata>();
     }
 
     elasticSearchClientContext = new Context();

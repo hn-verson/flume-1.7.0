@@ -105,6 +105,7 @@ public class KafkaSource extends AbstractPollableSource
   private Properties kafkaProps;
   private KafkaSourceCounter counter;
   private KafkaConsumer<String, byte[]> consumer;
+  private static Map<String, KafkaConsumer> consumerMap;
   private Iterator<ConsumerRecord<String, byte[]>> it;
 
   private final List<Event> eventList = new ArrayList<Event>();
@@ -127,6 +128,8 @@ public class KafkaSource extends AbstractPollableSource
   private String bootstrapServers;
   private String groupId = DEFAULT_GROUP_ID;
   private boolean migrateZookeeperOffsets = DEFAULT_MIGRATE_ZOOKEEPER_OFFSETS;
+
+  private String consumerId;
 
   /**
    * This class is a helper to subscribe for topics by using
@@ -176,6 +179,9 @@ public class KafkaSource extends AbstractPollableSource
     }
   }
 
+  public static KafkaConsumer getConsumerById(String consumerId){
+    return consumerMap == null ? null : consumerMap.get(consumerId);
+  }
 
   @Override
   protected Status doProcess() throws EventDeliveryException {
@@ -188,6 +194,8 @@ public class KafkaSource extends AbstractPollableSource
       final long nanoBatchStartTime = System.nanoTime();
       final long batchStartTime = System.currentTimeMillis();
       final long maxBatchEndTime = System.currentTimeMillis() + maxBatchDurationMillis;
+
+      consumer.lock();
 
       while (eventList.size() < batchUpperLimit &&
               System.currentTimeMillis() < maxBatchEndTime) {
@@ -249,6 +257,12 @@ public class KafkaSource extends AbstractPollableSource
         if (!headers.containsKey(KafkaSourceConstants.TYPE_HEADER)) {
           headers.put(KafkaSourceConstants.TYPE_HEADER, message.topic());
         }
+        if (!headers.containsKey(KafkaSourceConstants.PARTITION_HEADER)) {
+          headers.put(KafkaSourceConstants.PARTITION_HEADER, String.valueOf(message.partition()));
+        }
+        if (!headers.containsKey(KafkaSourceConstants.OFFSET_HEADER)) {
+          headers.put(KafkaSourceConstants.OFFSET_HEADER, String.valueOf(message.offset() + 1));
+        }
 
         if (log.isTraceEnabled()) {
           if (LogPrivacyUtil.allowLogRawData()) {
@@ -289,7 +303,7 @@ public class KafkaSource extends AbstractPollableSource
 
         if (!tpAndOffsetMetadata.isEmpty()) {
           long commitStartTime = System.nanoTime();
-          consumer.commitSync(tpAndOffsetMetadata);
+          //consumer.commitSync(tpAndOffsetMetadata);
           long commitEndTime = System.nanoTime();
           counter.addToKafkaCommitTimer((commitEndTime - commitStartTime) / (1000 * 1000));
           tpAndOffsetMetadata.clear();
@@ -301,6 +315,8 @@ public class KafkaSource extends AbstractPollableSource
     } catch (Exception e) {
       log.error("KafkaSource EXCEPTION, {}", e);
       return Status.BACKOFF;
+    } finally {
+      consumer.unlock();
     }
   }
 
@@ -318,10 +334,16 @@ public class KafkaSource extends AbstractPollableSource
   @Override
   protected void doConfigure(Context context) throws FlumeException {
     this.context = context;
-    headers = new HashMap<String, String>(4);
+    headers = new HashMap<String, String>(6);
     tpAndOffsetMetadata = new HashMap<TopicPartition, OffsetAndMetadata>();
     rebalanceFlag = new AtomicBoolean(false);
     kafkaProps = new Properties();
+
+    // set consumer identify
+    consumerId = context.getString(KafkaSourceConstants.KAFKA_CONSUMER_IDENTIFY);
+    if (consumerId != null && !"".equals(consumerId.trim())) {
+      consumerMap = new HashMap<>();
+    }
 
     // can be removed in the next release
     // See https://issues.apache.org/jira/browse/FLUME-2896
@@ -499,6 +521,10 @@ public class KafkaSource extends AbstractPollableSource
 
     //initialize a consumer.
     consumer = new KafkaConsumer<String, byte[]>(kafkaProps);
+
+    if (consumerMap != null) {
+      consumerMap.put(consumerId,consumer);
+    }
 
     // Subscribe for topics by already specified strategy
     subscriber.subscribe(consumer, new SourceRebalanceListener(rebalanceFlag));

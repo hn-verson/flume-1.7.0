@@ -98,6 +98,12 @@ public class ElasticSearchSinkConstants {
    */
   public static final String CLIENT_PREFIX = CLIENT_TYPE + ".";
 
+
+  /**
+   * The consumer logic Indentify
+   */
+  public static final String KAFKA_CONSUMER_IDENTIFY = "kafka.consumerId";
+
   /**
    * DEFAULTS USED BY THE SINK
    */

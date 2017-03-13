@@ -48,23 +48,23 @@ import org.apache.log4j.spi.LoggingEvent;
  * time in milliseconds the Load balancing client will backoff from a node that
  * has failed to consume an event
  * </p>
- * A sample log4j properties file which appends to a source would look like:
+ * A sample avro properties file which appends to a source would look like:
  *
  * <pre>
  * <p>
- * log4j.appender.out2 = org.apache.flume.clients.log4jappender.LoadBalancingLog4jAppender
- * log4j.appender.out2.Hosts = fooflumesource.com:25430 barflumesource.com:25430
- * log4j.appender.out2.Selector = RANDOM
- * log4j.logger.org.apache.flume.clients.log4jappender = DEBUG,out2</p>
+ * avro.appender.out2 = org.apache.flume.clients.log4jappender.LoadBalancingLog4jAppender
+ * avro.appender.out2.Hosts = fooflumesource.com:25430 barflumesource.com:25430
+ * avro.appender.out2.Selector = RANDOM
+ * avro.logger.org.apache.flume.clients.log4jappender = DEBUG,out2</p>
  * </pre>
  * <p>
  * <pre>
  * <p>
- * log4j.appender.out2 = org.apache.flume.clients.log4jappender.LoadBalancingLog4jAppender
- * log4j.appender.out2.Hosts = fooflumesource.com:25430 barflumesource.com:25430
- * log4j.appender.out2.Selector = ROUND_ROBIN
- * log4j.appender.out2.MaxBackoff = 60000
- * log4j.logger.org.apache.flume.clients.log4jappender = DEBUG,out2</p>
+ * avro.appender.out2 = org.apache.flume.clients.log4jappender.LoadBalancingLog4jAppender
+ * avro.appender.out2.Hosts = fooflumesource.com:25430 barflumesource.com:25430
+ * avro.appender.out2.Selector = ROUND_ROBIN
+ * avro.appender.out2.MaxBackoff = 60000
+ * avro.logger.org.apache.flume.clients.log4jappender = DEBUG,out2</p>
  * </pre>
  * <p>
  * <i>Note: Change the last line to the package of the class(es), that will do
@@ -73,7 +73,7 @@ import org.apache.log4j.spi.LoggingEvent;
  * </p>
  *
  * <pre>
- * <p>log4j.logger.com.bar.foo = DEBUG,out2</p>
+ * <p>avro.logger.com.bar.foo = DEBUG,out2</p>
  * </pre>
  *
  *

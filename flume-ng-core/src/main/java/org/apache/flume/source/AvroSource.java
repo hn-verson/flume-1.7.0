@@ -39,9 +39,8 @@ import org.apache.flume.conf.Configurables;
 import org.apache.flume.conf.LogPrivacyUtil;
 import org.apache.flume.event.EventBuilder;
 import org.apache.flume.instrumentation.SourceCounter;
-import org.apache.flume.source.avro.AvroFlumeEvent;
-import org.apache.flume.source.avro.AvroSourceProtocol;
-import org.apache.flume.source.avro.Status;
+import org.apache.flume.source.avro.*;
+import org.apache.flume.source.http.HTTPSourceConfigurationConstants;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
@@ -59,7 +58,9 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.io.FileInputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 import java.security.KeyStore;
 import java.security.Security;
 import java.util.ArrayList;
@@ -164,6 +165,11 @@ public class AvroSource extends AbstractSource implements EventDrivenSource,
 
   private List<IpFilterRule> rules;
 
+  private static final String CONFIG_HANDLER = "handler";
+  private static final String CONFIG_HANDLER_PREFIX = CONFIG_HANDLER + ".";
+  private static final String DEFAULT_HANDLER = "org.apache.flume.source.avro.DefaultHandler";
+  private Handler handler;
+
   @Override
   public void configure(Context context) {
     Configurables.ensureRequiredNonNull(context, PORT_KEY, BIND_KEY);
@@ -222,6 +228,30 @@ public class AvroSource extends AbstractSource implements EventDrivenSource,
       for (String patternRuleDefinition : patternRuleDefinitions) {
         rules.add(generateRule(patternRuleDefinition));
       }
+    }
+
+    String handlerClassName = context.getString(
+            CONFIG_HANDLER,
+            DEFAULT_HANDLER).trim();
+
+    try {
+      @SuppressWarnings("unchecked")
+      Class<? extends Handler> clazz =
+              null;
+      clazz = (Class<? extends Handler>)
+              Class.forName(handlerClassName);
+      handler = clazz.getDeclaredConstructor().newInstance();
+
+      Map<String, String> subProps =
+              context.getSubProperties(
+                      HTTPSourceConfigurationConstants.CONFIG_HANDLER_PREFIX);
+      handler.configure(new Context(subProps));
+    } catch (ClassNotFoundException e) {
+      logger.error("Error while configuring AvroSource. Exception follows.", e);
+      Throwables.propagate(e);
+    } catch (Exception e) {
+      logger.error("Error configuring AvroSource!", e);
+      Throwables.propagate(e);
     }
 
     if (sourceCounter == null) {
@@ -330,19 +360,6 @@ public class AvroSource extends AbstractSource implements EventDrivenSource,
         ", port: " + port + " }";
   }
 
-  /**
-   * Helper function to convert a map of CharSequence to a map of String.
-   */
-  private static Map<String, String> toStringMap(
-      Map<CharSequence, CharSequence> charSeqMap) {
-    Map<String, String> stringMap =
-        new HashMap<String, String>();
-    for (Map.Entry<CharSequence, CharSequence> entry : charSeqMap.entrySet()) {
-      stringMap.put(entry.getKey().toString(), entry.getValue().toString());
-    }
-    return stringMap;
-  }
-
   @Override
   public Status append(AvroFlumeEvent avroEvent) {
     if (logger.isDebugEnabled()) {
@@ -356,8 +373,7 @@ public class AvroSource extends AbstractSource implements EventDrivenSource,
     sourceCounter.incrementAppendReceivedCount();
     sourceCounter.incrementEventReceivedCount();
 
-    Event event = EventBuilder.withBody(avroEvent.getBody().array(),
-        toStringMap(avroEvent.getHeaders()));
+    Event event = handler.getEvent(avroEvent);
 
     try {
       getChannelProcessor().processEvent(event);
@@ -384,7 +400,7 @@ public class AvroSource extends AbstractSource implements EventDrivenSource,
 
     for (AvroFlumeEvent avroEvent : events) {
       Event event = EventBuilder.withBody(avroEvent.getBody().array(),
-          toStringMap(avroEvent.getHeaders()));
+              AbstractHandler.toStringMap(avroEvent.getHeaders()));
 
       batch.add(event);
     }
