@@ -15,79 +15,79 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
   http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <artifactId>flume-ng-clients</artifactId>
-    <groupId>org.apache.flume</groupId>
-    <version>1.7.0</version>
-    <relativePath>..</relativePath>
-  </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>flume-ng-clients</artifactId>
+        <groupId>org.apache.flume</groupId>
+        <version>1.7.0</version>
+        <relativePath>..</relativePath>
+    </parent>
 
-  <groupId>org.apache.flume.flume-ng-clients</groupId>
-  <artifactId>flume-ng-log4jappender</artifactId>
-  <name>Flume NG Log4j Appender</name>
+    <groupId>org.apache.flume.flume-ng-clients</groupId>
+    <artifactId>flume-ng-log4jappender</artifactId>
+    <name>Flume NG Log4j Appender</name>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.rat</groupId>
-        <artifactId>apache-rat-plugin</artifactId>
-      </plugin>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+            </plugin>
 
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <descriptorRefs>
-            <descriptorRef>jar-with-dependencies</descriptorRef>
-          </descriptorRefs>
-        </configuration>
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
-  <dependencies>
+    <dependencies>
 
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.flume</groupId>
-      <artifactId>flume-ng-sdk</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.flume</groupId>
+            <artifactId>flume-ng-sdk</artifactId>
+        </dependency>
 
-    <!-- pull in flume core only for unit tests. TODO: not ideal -->
-    <dependency>
-      <groupId>org.apache.flume</groupId>
-      <artifactId>flume-ng-core</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <!-- pull in flume core only for unit tests. TODO: not ideal -->
+        <dependency>
+            <groupId>org.apache.flume</groupId>
+            <artifactId>flume-ng-core</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.flume</groupId>
-      <artifactId>flume-ng-configuration</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.flume</groupId>
+            <artifactId>flume-ng-configuration</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-  </dependencies>
+    </dependencies>
 
 
 </project>

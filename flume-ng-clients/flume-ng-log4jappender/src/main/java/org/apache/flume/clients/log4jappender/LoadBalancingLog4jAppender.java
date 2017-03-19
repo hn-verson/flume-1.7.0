@@ -146,6 +146,10 @@ public class LoadBalancingLog4jAppender extends Log4jAppender {
     }
 
     Properties props = new Properties();
+
+    // resolve Loading Balancing Log4J Appender StackOverflow exception
+    props.setProperty(RpcClientConfigurationConstants.MAX_IO_WORKERS, Runtime.getRuntime().availableProcessors() * 2 + "");
+
     String[] hostsAndPorts = hosts.split("\\s+");
     StringBuilder names = new StringBuilder();
     for (int i = 0; i < hostsAndPorts.length; i++) {
