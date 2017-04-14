@@ -617,19 +617,6 @@ limitations under the License.
     <url>http://www.apache.org</url>
   </organization>
 
-  <distributionManagement>
-    <repository>
-      <id>apache.staging.https</id>
-      <name>Apache Staging Repository</name>
-      <url>https://repository.apache.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-    <site>
-      <id>apache.website</id>
-      <url>${siteUrlDeployment}</url>
-      <name>Flume Site</name>
-    </site>
-  </distributionManagement>
-
   <build>
 
     <plugins>

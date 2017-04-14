@@ -19,10 +19,6 @@
 # under the License.
 #
 
-LOG_DIR=/logs/flume
-LOG_FILE="flume_$$.log"
-FLUME_LOG4J_OPTS="-Dflume.log.dir=$LOG_DIR -Dflume.log.file=$LOG_FILE"
-
 ################################
 # constants
 ################################
@@ -226,7 +222,6 @@ run_flume() {
 # set default params
 FLUME_CLASSPATH=""
 FLUME_JAVA_LIBRARY_PATH=""
-JAVA_OPTS="-Xms20m -Xmx1024m"
 LD_LIBRARY_PATH=""
 
 opt_conf=""

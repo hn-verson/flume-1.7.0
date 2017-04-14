@@ -134,10 +134,6 @@ public class HiveSink extends AbstractSink implements Configurable {
             "specified for sink " + getName());
     }
     table = context.getString(Config.HIVE_TABLE);
-    if (table == null) {
-      throw new IllegalArgumentException(Config.HIVE_TABLE + " config setting is not " +
-              "specified for sink " + getName());
-    }
 
     String partitions = context.getString(Config.HIVE_PARTITION);
     if (partitions != null) {
@@ -317,6 +313,13 @@ public class HiveSink extends AbstractSink implements Configurable {
         Gson gson = new Gson();
         Type type = new TypeToken<Map<String, String>>(){}.getType();
         Map<String, String> bodys = gson.fromJson(body, type);
+
+        String topic = headers.get(KafkaSourceConstants.TYPE_HEADER);
+
+        if (table == null && (table=topic) == null) {
+          throw new IllegalArgumentException(Config.HIVE_TABLE + " config setting is not " +
+                  "specified for sink " + getName());
+        }
 
         //1) Create end point by substituting place holders
         HiveEndPoint endPoint = makeEndPoint(metaStoreUri, database, table,
